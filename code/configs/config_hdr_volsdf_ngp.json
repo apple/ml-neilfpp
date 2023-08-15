@@ -1,0 +1,233 @@
+{
+    "model": {
+        "geometry_module": "model.geo_volsdf",
+        "use_ldr_image": false,
+        "num_train_incident_samples": 128,
+        "num_eval_incident_samples": 256,
+        "brdf_network": {
+            "in_dims": 3,
+            "out_dims": 5,
+            "dims": [64, 64],
+            "skip_connection": [],
+            "weight_norm": true,
+            "embed_config": [
+                {"otype": "Identity"},
+                {"otype": "HashGrid",
+                    "n_levels": 16,
+                    "n_features_per_level": 2,
+                    "log2_hashmap_size": 19,
+                    "base_resolution": 16,
+                    "max_resolution": 4096,
+                    "interpolation": "Linear",
+                    "input_range": [-3, 3],
+                    "init_range": 1e-4
+                }
+            ],
+            "use_siren": false
+        },
+        "neilf_network": {
+            "in_dims": 6,
+            "out_dims": 1,
+            "dims": [128, 128, 128, 128, 128, 128, 128, 128],
+            "dir_insert": [0, 4],
+            "pos_insert": [4],
+            "embed_config_view": [
+                {"otype": "Identity"},
+                {"otype": "SphericalHarmonics",
+                    "n_frequencies": 6,
+                    "input_range": [-1, 1]
+                }
+            ],
+            "embed_config": [{"otype": "Identity"}],
+            "use_siren": false,
+            "weight_norm": true,
+            "init_output": 3.0,
+            "fused": false,
+            "exp_act_base": 10
+        },
+        "geometry": {
+            "scene_bounding_sphere": 3.0,
+            "cutoff_bounding_sphere": 2.0,
+            "object_bounding_sphere": 1.0,
+            "implicit_network": {
+                "dims": [ 64, 64 ],
+                "aux_dims": [
+                    ["pred_grad", 3]
+                ],
+                "geometric_init": true,
+                "bias": 0.6,
+                "skip_in": [],
+                "weight_norm": true,
+                "hess_type": "numeric",
+                "sphere_scale": 20.0,
+                "embed_config": [
+                    {"otype": "Identity"},
+                    {"otype": "HashGrid",
+                        "n_levels": 16,
+                        "n_features_per_level": 2,
+                        "log2_hashmap_size": 19,
+                        "base_resolution": 16,
+                        "max_resolution": 4096,
+                        "interpolation": "Linear",
+                        "input_range": [-3, 3],
+                        "init_range": 1e-4
+                    }
+                ]
+            },
+            "rendering_network": {
+                "mode": "idr",
+                "d_out": 3,
+                "dims": [ 64, 64, 64, 64],
+                "weight_norm": true,
+                "embed_config_view": [
+                    {"otype": "Identity"},
+                    {"otype": "SphericalHarmonics",
+                        "n_frequencies": 4,
+                        "input_range": [-1, 1]
+                    }
+                ],
+                "fused": false,
+                "last_act": "Sigmoid",
+                "sigmoid_output_scale": 3.0,
+                "force_reflection": false
+            },
+            "density": {
+                "params_init": {
+                    "beta": 0.1
+                },
+                "beta_min": 0.0001
+            },
+            "ray_sampler": {
+                "near": 0.0,
+                "N_samples": 64,
+                "N_samples_eval": 128,
+                "N_samples_extra": 32,
+                "eps": 0.1,
+                "beta_iters": 10,
+                "max_total_iters": 5,
+                "N_samples_inverse_sphere": 32,
+                "add_tiny": 1.0e-6
+            },
+            "background": {
+                "otype": "nerfpp",
+                "implicit_network": {
+                    "dims": [ 64, 64 ],
+                    "aux_dims": [],
+                    "skip_in": [],
+                    "weight_norm": false,
+                    "embed_config": [
+                        {"otype": "Identity"},
+                        {"otype": "HashGrid",
+                            "n_levels": 16,
+                            "n_features_per_level": 2,
+                            "log2_hashmap_size": 19,
+                            "base_resolution": 16,
+                            "max_resolution": 4096,
+                            "interpolation": "Linear",
+                            "input_range": [-3, 3],
+                            "init_range": 1e-4
+                        }
+                    ]
+                },
+                "rendering_network": {
+                    "mode": "nerf",
+                    "d_out": 3,
+                    "dims": [ 64, 64 ],
+                    "weight_norm": false,
+                    "embed_config_view": [
+                        {"otype": "Identity"},
+                        {"otype": "SphericalHarmonics",
+                            "n_frequencies": 4,
+                            "input_range": [-1, 1]
+                        }
+                    ],
+                    "fused": false,
+                    "last_act": "Sigmoid",
+                    "sigmoid_output_scale": 3.0
+                }
+            }
+        }
+    },
+    "dataset": {
+        "validation_indexes": [
+            9,
+            18,
+            30,
+            41,
+            50,
+            62,
+            73,
+            82,
+            94
+        ],
+        "rescale": 2.9,
+        "required": {
+            "position": false,
+            "normal": false,
+            "mesh": false,
+            "pcd": true
+        },
+        "num_pcd_samples": 8192
+    },
+    "train": {
+        "num_pixel_samples": 4096,
+        "num_reg_samples": 8192,
+        "training_iterations": 40000,
+        "mat2geo_grad_scale": 0.1,
+        "lr": 0.001,
+        "lr_scaler": 0.01,
+        "lr_warmup_start_factor": 0.1,
+        "lr_warmup_iters": 100,
+        "lr_decay": 0.1,
+        "lr_decay_iters": [
+            10000,
+            20000,
+            30000
+        ],
+        "geo_loss": {
+            "rgb_loss": "torch.nn.L1Loss",
+            "remove_black": true,
+            "eikonal_weight": 0.1,
+            "hessian_weight": 0.0001,
+            "minsurf_weight": 0.0001,
+            "orientation_weight": 0.0,
+            "pred_normal_weight": 0.0,
+            "feature_weight": 0.0,
+            "pcd_weight": 0.0
+        },
+        "rgb_loss": "torch.nn.L1Loss",
+        "lambertian_weighting": 0.0,
+        "smoothness_weighting": 0.0,
+        "trace_weighting": 0.1,
+        "var_weighting": 0.1,
+        "remove_black": true,
+        "phase": {
+            "geo": {
+                "training_iterations": 5000,
+                "mat2geo_grad_scale": 1.0,
+                "lr": 0.01,
+                "lr_decay_iters": [2500],
+                "geo_loss": {
+                    "hessian_weight": 0.001,
+                    "minsurf_weight": 0.001,
+                    "pcd_weight": 0.1
+                }
+            },
+            "mat": {
+                "training_iterations": 5000,
+                "mat2geo_grad_scale": 0.0,
+                "lr": 0.01,
+                "lr_decay_iters": [2500]
+            }
+        }
+    },
+    "eval": {
+        "plot_frequency": 5000,
+        "save_frequency": 100000,
+        "num_plot_images": 1,
+        "max_depth": 3.0,
+        "resolution": 100,
+        "full_resolution": 512,
+        "image_scale": 1.5
+    }
+}

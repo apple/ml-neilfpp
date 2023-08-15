@@ -1,0 +1,168 @@
+{
+    "model": {
+        "geometry_module": "model.geo_volsdf",
+        "use_ldr_image": true,
+        "num_train_incident_samples": 128,
+        "num_eval_incident_samples": 256,
+        "separate_brdf": false,
+        "brdf_network": {
+            "in_dims": 3,
+            "out_dims": 5,
+            "dims": [512, 512, 512, 512, 512, 512, 512, 512],
+            "skip_connection": [4],
+            "weight_norm": false,
+            "embed_config": [
+                {"otype": "Identity"},
+                {"otype": "Frequency",
+                    "n_frequencies": 6
+                }
+            ],
+            "use_siren": true
+        },
+        "neilf_network": {
+            "in_dims": 6,
+            "out_dims": 1,
+            "dims": [128, 128, 128, 128, 128, 128, 128, 128],
+            "dir_insert": [0, 4],
+            "pos_insert": [4],
+            "embed_config_view": [
+                {"otype": "Identity"},
+                {"otype": "Frequency",
+                    "n_frequencies": 6
+                }
+            ],
+            "embed_config": [{"otype": "Identity"}],
+            "use_siren": true,
+            "weight_norm": false,
+            "init_output": -1.0,
+            "fused": false
+        },
+        "geometry": {
+            "scene_bounding_sphere": 3.0,
+            "cutoff_bounding_sphere": 2.0,
+            "object_bounding_sphere": 1.0,
+            "implicit_network": {
+                "dims": [ 256, 256, 256, 256, 256, 256, 256, 256 ],
+                "aux_dims": [
+                    ["pred_grad", 3]
+                ],
+                "geometric_init": true,
+                "bias": 0.6,
+                "skip_in": [4],
+                "weight_norm": true,
+                "hess_type": "analytic",
+                "sphere_scale": 20.0,
+                "embed_config": [
+                    {"otype": "Identity"},
+                    {"otype": "Frequency",
+                        "n_frequencies": 6
+                    }
+                ]
+            },
+            "rendering_network": {
+                "mode": "idr",
+                "d_out": 3,
+                "dims": [ 256, 256, 256, 256],
+                "weight_norm": true,
+                "embed_config_view": [
+                    {"otype": "Identity"},
+                    {"otype": "Frequency",
+                        "n_frequencies": 4
+                    }
+                ],
+                "fused": false,
+                "last_act": "Sigmoid"
+            },
+            "density": {
+                "params_init": {
+                    "beta": 0.1
+                },
+                "beta_min": 0.0001
+            },
+            "ray_sampler": {
+                "near": 0.0,
+                "N_samples": 64,
+                "N_samples_eval": 128,
+                "N_samples_extra": 32,
+                "eps": 0.1,
+                "beta_iters": 10,
+                "max_total_iters": 5
+            },
+            "background": {"otype": "none"}
+        }
+    },
+    "dataset": {
+        "validation_indexes": [
+            2,
+            12,
+            17,
+            30,
+            34
+        ],
+        "rescale": 2.9,
+        "required": {
+            "position": false,
+            "normal": false,
+            "mesh": false,
+            "pcd": false
+        },
+        "num_pcd_samples": 8192
+    },
+    "train": {
+        "num_pixel_samples": 3072,
+        "num_reg_samples": 8192,
+        "training_iterations": 80000,
+        "mat2geo_grad_scale": 0.1,
+        "lr": 0.0003,
+        "lr_scaler": 0.01,
+        "lr_warmup_start_factor": 0.1,
+        "lr_warmup_iters": 0,
+        "lr_decay": 0.1,
+        "lr_decay_iters": [
+            40000
+        ],
+        "geo_loss": {
+            "rgb_loss": "torch.nn.L1Loss",
+            "eikonal_weight": 0.1,
+            "hessian_weight": 0.0001,
+            "minsurf_weight": 0.0001,
+            "orientation_weight": 0.0,
+            "pred_normal_weight": 0.0,
+            "feature_weight": 0.0,
+            "pcd_weight": 0.0
+        },
+        "rgb_loss": "torch.nn.L1Loss",
+        "lambertian_weighting": 0.0005,
+        "smoothness_weighting": 0.0005,
+        "trace_weighting": 0.1,
+        "var_weighting": 0.0,
+        "phase": {
+            "geo": {
+                "num_pixel_samples": 4096,
+                "training_iterations": 8000,
+                "mat2geo_grad_scale": 1.0,
+                "lr": 0.001,
+                "lr_decay_iters": [4000],
+                "geo_loss": {
+                    "hessian_weight": 0.001,
+                    "minsurf_weight": 0.001
+                }
+            },
+            "mat": {
+                "training_iterations": 8000,
+                "mat2geo_grad_scale": 0.0,
+                "lr": 0.001,
+                "lr_decay_iters": []
+            }
+        }
+    },
+    "eval": {
+        "plot_frequency": 4000,
+        "save_frequency": 20000,
+        "num_plot_images": 1,
+        "max_depth": 3.0,
+        "resolution": 100,
+        "full_resolution": 512,
+        "image_scale": 1.5
+    }
+}

@@ -1,0 +1,127 @@
+{
+    "model": {
+        "geometry_module": "model.geo_fixmesh",
+        "use_ldr_image": false,
+        "num_train_incident_samples": 128,
+        "num_eval_incident_samples": 256,
+        "separate_brdf": false,
+        "brdf_network": {
+            "in_dims": 3,
+            "out_dims": 5,
+            "dims": [512, 512, 512, 512, 512, 512, 512, 512],
+            "skip_connection": [4],
+            "weight_norm": false,
+            "embed_config": [
+                {"otype": "Identity"},
+                {"otype": "Frequency",
+                    "n_frequencies": 6
+                }
+            ],
+            "use_siren": true
+        },
+        "neilf_network": {
+            "in_dims": 6,
+            "out_dims": 3,
+            "dims": [128, 128, 128, 128, 128, 128, 128, 128],
+            "dir_insert": [0, 4],
+            "pos_insert": [4],
+            "embed_config_view": [
+                {"otype": "Identity"},
+                {"otype": "Frequency",
+                    "n_frequencies": 6
+                }
+            ],
+            "embed_config": [{"otype": "Identity"}],
+            "use_siren": true,
+            "weight_norm": false,
+            "init_output": -1.0,
+            "fused": false,
+            "exp_act_base": 10
+        },
+        "geometry": {
+            "slf_network": {
+                "in_dims": 6,
+                "out_dims": 3,
+                "dims": [128, 128, 128, 128, 128, 128, 128, 128],
+                "dir_insert": [4],
+                "pos_insert": [0, 4],
+                "embed_config": [
+                    {"otype": "Identity"},
+                    {"otype": "Frequency",
+                        "n_frequencies": 6
+                    }
+                ],
+                "embed_config_view": [{"otype": "Identity"}],
+                "use_siren": true,
+                "weight_norm": false,
+                "init_output": 0.5,
+                "fused": false,
+                "last_act": "Sigmoid",
+                "sigmoid_output_scale": 3.0
+            }
+        }
+    },
+    "dataset": {
+        "validation_indexes": [
+            9,
+            18,
+            30,
+            41,
+            50,
+            62,
+            73,
+            82,
+            94
+        ],
+        "required": {
+            "position": true,
+            "normal": true,
+            "mesh": true,
+            "pcd": false
+        }
+    },
+    "train": {
+        "num_pixel_samples": 8192,
+        "training_iterations": 30000,
+        "mat2geo_grad_scale": 0.0,
+        "lr": 0.002,
+        "lr_scaler": 0.01,
+        "lr_warmup_start_factor": 0.1,
+        "lr_warmup_iters": 0,
+        "lr_decay": 0.2,
+        "lr_decay_iters": [
+            10000,
+            20000
+        ],
+        "geo_loss": {},
+        "rgb_loss": "torch.nn.L1Loss",
+        "lambertian_weighting": 0.005,
+        "smoothness_weighting": 0.0005,
+        "trace_weighting": 0.1,
+        "var_weighting": 0.0,
+        "trace_grad_scale": 0.7,
+        "phase": {
+            "geo": {
+                "training_iterations": 5000,
+                "lr_decay_iters": []
+            },
+            "mat": {
+                "training_iterations": 1000,
+                "lr_decay_iters": []
+            }
+        }
+    },
+    "eval": {
+        "plot_env": [
+            [4, 674, 310],
+            [4, 1031, 510],
+            [4, 783, 898],
+            [5, 852, 501]
+        ],
+        "plot_frequency": 5000,
+        "save_frequency": 100000,
+        "num_plot_images": 1,
+        "max_depth": 3.0,
+        "image_scale": 1.5
+    }
+}
